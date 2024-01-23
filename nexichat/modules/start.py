@@ -1,144 +1,355 @@
-
-
-import asyncio
+from pyrogram import Client, filters
+from pyrogram.types import *
+from pymongo import MongoClient
+import requests
 import random
-
-from pyrogram import filters
-from pyrogram.enums import ChatType
-from pyrogram.types import InlineKeyboardMarkup, Message
+import os
+import re
 
 
-from nexichat import nexichat
-from nexichat.database.chats import add_served_chat
-from nexichat.database.users import add_served_user
-from nexichat.modules.helpers import (
-    CLOSE_BTN,
-    DEV_OP,
-    HELP_BTN,
-    HELP_BUTN,
-    HELP_READ,
-    HELP_START,
-    SOURCE_READ,
-    START,
+API_ID = os.environ.get("API_ID", "none") 
+API_HASH = os.environ.get("API_HASH", "none") 
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "none") 
+MONGO_URL = os.environ.get("MONGO_URL", "none")
+BOT_IMAGE = os.environ.get("BOT_IMAGE", "none")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "none")
+OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "none")
+SUPPORT_GROUP = os.environ.get("SUPPORT_GROUP", "none")
+UPDATES_CHANNEL = os.environ.get("UPDATES_CHANNEL", "none")
+
+
+bot = Client(
+    "V_Chat_Bot" ,
+    api_id = API_ID,
+    api_hash = API_HASH ,
+    bot_token = BOT_TOKEN
 )
 
 
-#----------------IMG-------------#
-
-
-
-# Random Start Images
-IMG = [
-    "https://graph.org/file/210751796ff48991b86a3.jpg",
-    "https://graph.org/file/7b4924be4179f70abcf33.jpg",
-    "https://graph.org/file/f6d8e64246bddc26b4f66.jpg",
-    "https://graph.org/file/63d3ec1ca2c965d6ef210.jpg",
-    "https://graph.org/file/9f12dc2a668d40875deb5.jpg",
-    "https://graph.org/file/0f89cd8d55fd9bb5130e1.jpg",
-    "https://graph.org/file/e5eb7673737ada9679b47.jpg",
-    "https://graph.org/file/2e4dfe1fa5185c7ff1bfd.jpg",
-    "https://graph.org/file/36af423228372b8899f20.jpg",
-    "https://graph.org/file/c698fa9b221772c2a4f3a.jpg",
-    "https://graph.org/file/61b08f41855afd9bed0ab.jpg",
-    "https://graph.org/file/744b1a83aac76cb3779eb.jpg",
-    "https://graph.org/file/814cd9a25dd78480d0ce1.jpg",
-    "https://graph.org/file/e8b472bcfa6680f6c6a5d.jpg",
-]
-
-
-#----------------IMG-------------#
-
-
-#---------------STICKERS---------------#
-
-# Random Stickers
-STICKER = [
-    "CAACAgUAAx0CYlaJawABBy4vZaieO6T-Ayg3mD-JP-f0yxJngIkAAv0JAALVS_FWQY7kbQSaI-geBA",
-    "CAACAgUAAx0CYlaJawABBy4rZaid77Tf70SV_CfjmbMgdJyVD8sAApwLAALGXCFXmCx8ZC5nlfQeBA",
-    "CAACAgUAAx0CYlaJawABBy4jZaidvIXNPYnpAjNnKgzaHmh3cvoAAiwIAAIda2lVNdNI2QABHuVVHgQ",
-]
-
-#---------------STICKERS---------------#
-
-
-#---------------EMOJIOS---------------#
-
-EMOJIOS = [
-    "💣",
-    "💥",
-    "🪄",
-    "🧨",
-    "⚡",
-    "🤡",
-    "👻",
-    "🎃",
-    "🎩",
-    "🕊",
-]
-
-
-#---------------EMOJIOS---------------#
-
-@nexichat.on_cmd(["start", "aistart"])
-async def start(_, m: Message):
-    if m.chat.type == ChatType.PRIVATE:
-        accha = await m.reply_text(
-            text=random.choice(EMOJIOS),
+async def is_admins(chat_id: int):
+    return [
+        member.user.id
+        async for member in bot.iter_chat_members(
+            chat_id, filter="administrators"
         )
-        await asyncio.sleep(1.3)
-        await accha.edit("__ᴅιиg ᴅσиg ꨄ︎ ѕтαятιиg..__")
-        await asyncio.sleep(0.2)
-        await accha.edit("__ᴅιиg ᴅσиg ꨄ sтαятιиg.....__")
-        await asyncio.sleep(0.2)
-        await accha.edit("__ᴅιиg ᴅσиg ꨄ︎ sтαятιиg..__")
-        await asyncio.sleep(0.2)
-        await accha.delete()
-        umm = await m.reply_sticker(sticker=random.choice(STICKER))
-        await asyncio.sleep(2)
-        await umm.delete()
-        await m.reply_photo(
-            photo=random.choice(IMG),
-            caption=f"""**๏ ʜᴇʏ, ɪ ᴀᴍ {nexichat.name}**\n**➻ ᴀɴ ᴀɪ ʙᴀsᴇᴅ ᴄʜᴀᴛʙᴏᴛ.**\n**──────────────**\n**➻ ᴜsᴀɢᴇ /chatbot [ᴏɴ/ᴏғғ]**\n<b>||๏ ʜɪᴛ ʜᴇʟᴘ ʙᴜᴛᴛᴏɴ ғᴏʀ ʜᴇʟᴘ||</b>""",
-            reply_markup=InlineKeyboardMarkup(DEV_OP),
-        )
-        await add_served_user(m.from_user.id)
-    else:
-        await m.reply_photo(
-            photo=random.choice(IMG),
-            caption=START,
-            reply_markup=InlineKeyboardMarkup(HELP_START),
-        )
-        await add_served_chat(m.chat.id)
+    ]
 
 
-@nexichat.on_cmd("help")
-async def help(client: nexichat, m: Message):
-    if m.chat.type == ChatType.PRIVATE:
-        hmm = await m.reply_photo(
-            photo=random.choice(IMG),
-            caption=HELP_READ,
-            reply_markup=InlineKeyboardMarkup(HELP_BTN),
-        )
-        await add_served_user(m.from_user.id)
-    else:
-        await m.reply_photo(
-            photo=random.choice(IMG),
-            caption="**ʜᴇʏ, ᴘᴍ ᴍᴇ ғᴏʀ ʜᴇʟᴘ ᴄᴏᴍᴍᴀɴᴅs!**",
-            reply_markup=InlineKeyboardMarkup(HELP_BUTN),
-        )
-        await add_served_chat(m.chat.id)
+@bot.on_message(filters.command("start") & filters.private & ~filters.edited)
+async def start_(client: Client, message: Message):
+    await message.reply_photo(
+        photo=f"{BOT_IMAGE}",
+        caption=f"""**━━━━━━━━━━━━━━━━━━━━━━━━
+💥 𝐇𝐢  𝐈'𝐦 𝐀 𝐀𝐝𝐯𝐚𝐧𝐜𝐞 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭 🌷.\n\n📌 𝐌𝐲 𝐍𝐚𝐦𝐞 𝐈𝐬 𝐕 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭 🌷 𝐅𝐨𝐫𝐦 𝐈𝐧𝐝𝐢𝐚 🇮🇳 \n\n🌷 𝐈'𝐦 𝐀 𝐀𝐫𝐭𝐢𝐟𝐢𝐜𝐢𝐚𝐥 𝐈𝐧𝐭𝐞𝐥𝐥𝐢𝐠𝐞𝐧𝐜𝐞 🌷\n\n /chatbot - [on|off] 𝐓𝐡𝐢𝐬 𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐔𝐬𝐞 𝐎𝐧𝐥𝐲 𝐀𝐧𝐲 𝐆𝐫𝐨𝐮𝐩
 
+┏━━━━━━━━━━━━━━━━━┓
+┣❥︎ ♕︎𝐎𝐰𝐧𝐞𝐫♕︎   » [𝐂𝐥𝐢𝐜𝐤 𝐇𝐞𝐫𝐞](https://t.me/{OWNER_USERNAME})
+┣❥︎ 𝐔𝐩𝐝𝐚𝐭𝐞𝐬 ➪ » [𝐂𝐥𝐢𝐜𝐤 𝐇𝐞𝐫𝐞](https://t.me/{UPDATES_CHANNEL})
+┣❥︎ 𝐒𝐮𝐩𝐩𝐨𝐫𝐭 ➪ » [𝐂𝐥𝐢𝐜𝐤 𝐇𝐞𝐫𝐞](https://t.me/{SUPPORT_GROUP})
+┣❥︎ 𝐂𝐫𝐞𝐚𝐭𝐨𝐫 ➪ » [GROUP ADDA OWNER](https://t.me/groups_adda_owners)
+┗━━━━━━━━━━━━━━━━━┛
 
-@nexichat.on_cmd("repo")
-async def repo(_, m: Message):
-    await m.reply_text(
-        text=SOURCE_READ,
-        reply_markup=InlineKeyboardMarkup(CLOSE_BTN),
-        disable_web_page_preview=True,
+💞 𝐉𝐮𝐬𝐭 𝐀𝐝𝐝 𝐌𝐞 » 𝐓𝐨 𝐘𝐨𝐮𝐫 𝐆𝐫𝐨𝐮𝐩 𝐀𝐧𝐝
+𝐄𝐧𝐣𝐨𝐲 𝐒𝐮𝐩𝐞𝐫 𝐐𝐮𝐚𝐥𝐢𝐭𝐲 ❥︎𝐂𝐡𝐚𝐭.
+━━━━━━━━━━━━━━━━━━━━━━━━**""",
+    reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "➕ ❰ 𝐀𝐝𝐝 𝐌𝐞 𝐓𝐨 𝐘𝐨𝐮𝐫 𝐆𝐫𝐨𝐮𝐩 ❱ ➕", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
+                ]
+                
+           ]
+        ),
+    )
+    
+    
+@bot.on_message(filters.command(["/start", f"start@{BOT_USERNAME}", "/alive", ".alive", "#bikash", "#aditya"]) & filters.group & ~filters.edited)
+async def start(client: Client, message: Message):
+    await message.reply_photo(
+        photo=f"{BOT_IMAGE}",
+        caption=f"""💥 𝐇𝐢! 𝐈'𝐦 𝐀 𝐀𝐝𝐯𝐚𝐧𝐜𝐞 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭 🌷.\n\n📌 𝐌𝐲 𝐍𝐚𝐦𝐞 𝐈𝐬 𝐕 𝐁𝐨𝐭 🌷 𝐅𝐨𝐫𝐦 𝐈𝐧𝐝𝐢𝐚 🇮🇳 \n\n🌷 𝐈'𝐦 𝐀 𝐀𝐫𝐭𝐢𝐟𝐢𝐜𝐢𝐚𝐥 𝐈𝐧𝐭𝐞𝐥𝐥𝐢𝐠𝐞𝐧𝐜𝐞 🌷\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷\n\n /chatbot - [on|off]""",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        " 💥 𝐉𝐨𝐢𝐧 𝐎𝐮𝐫 𝐂𝐡𝐚𝐭 𝐆𝐫𝐨𝐮𝐩 💞", url=f"https://t.me/bgt_chat")
+                ]
+            ]
+        ),
     )
 
 
-@nexichat.on_message(filters.new_chat_members)
-async def welcome(_, m: Message):
-    for member in m.new_chat_members:
-        await m.reply_photo(photo=random.choice(IMG), caption=START)
+
+@bot.on_message(
+    filters.command("chatbot off", prefixes=["/", ".", "?", "-"])
+    & ~filters.private)
+async def chatbotofd(client, message):
+    vdb = MongoClient(MONGO_URL)    
+    v = vdb["vDb"]["v"]     
+    if message.from_user:
+        user = message.from_user.id
+        chat_id = message.chat.id
+        if user not in (
+           await is_admins(chat_id)
+        ):
+           return await message.reply_text(
+                "💥 𝐇𝐞𝐲 𝐘𝐨𝐮 𝐀𝐫𝐞 𝐍𝐨𝐭 𝐀 𝐀𝐝𝐦𝐢𝐧 💥"
+            )
+    is_v = v.find_one({"chat_id": message.chat.id})
+    if not is_v:
+        v.insert_one({"chat_id": message.chat.id})
+        await message.reply_text(f"🌷 𝐕 𝐂𝐡𝐚𝐭𝐛𝐨𝐭 𝐃𝐢𝐬𝐚𝐛𝐥𝐞𝐝 🥀!\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷")
+    if is_v:
+        await message.reply_text(f"🌷𝐕 𝐂𝐡𝐚𝐭𝐛𝐨𝐭 𝐈𝐬 𝐀𝐥𝐫𝐞𝐚𝐝𝐭 𝐃𝐢𝐬𝐚𝐛𝐥𝐞𝐝 🥀!\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷")
+    
+
+@bot.on_message(
+    filters.command("chatbot on", prefixes=["/", ".", "?", "-"])
+    & ~filters.private)
+async def chatboton(client, message):
+    vdb = MongoClient(MONGO_URL)    
+    v = vdb["vDb"]["v"]     
+    if message.from_user:
+        user = message.from_user.id
+        chat_id = message.chat.id
+        if user not in (
+            await is_admins(chat_id)
+        ):
+            return await message.reply_text(
+                "You are not admin"
+            )
+    is_v = v.find_one({"chat_id": message.chat.id})
+    if not is_v:           
+        await message.reply_text(f"💥 𝐕 𝐂𝐡𝐚𝐭𝐛𝐨𝐭 𝐈𝐬 𝐀𝐥𝐫𝐞𝐚𝐝𝐲𝐄𝐧𝐚𝐛𝐥𝐞𝐝🌷!\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷")
+    if is_v:
+        v.delete_one({"chat_id": message.chat.id})
+        await message.reply_text(f"💥 𝐕 𝐂𝐡𝐚𝐭𝐛𝐨𝐭 𝐈𝐬 𝐄𝐧𝐚𝐛𝐥𝐞𝐝 🌷!\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷")
+    
+
+@bot.on_message(
+    filters.command("chatbot", prefixes=["/", ".", "?", "-"])
+    & ~filters.private)
+async def chatbot(client, message):
+    await message.reply_text(f"**🇮🇳 𝐔𝐬𝐚𝐠𝐞 🌷 :**\n/chatbot [on|off] 𝐎𝐧𝐥𝐲 𝐆𝐫𝐨𝐮𝐩 🇮🇳 !\n\n𝐀𝐧𝐲 𝐏𝐫𝐨𝐛𝐥𝐞𝐦 𝐓𝐨 [𝐑𝐞𝐩𝐨𝐫𝐭](https://t.me/{SUPPORT_GROUP})  🥀\n\n[𝐔𝐩𝐝𝐚𝐭𝐞𝐬](https://t.me/{UPDATES_CHANNEL}) 🌷")
+
+
+@bot.on_message(
+ (
+        filters.text
+        | filters.sticker
+    )
+    & ~filters.private
+    & ~filters.bot,
+)
+async def vai(client: Client, message: Message):
+
+   chatdb = MongoClient(MONGO_URL)
+   chatai = chatdb["Word"]["WordDb"]   
+
+   if not message.reply_to_message:
+       vdb = MongoClient(MONGO_URL)
+       v = vdb["vDb"]["v"] 
+       is_v = v.find_one({"chat_id": message.chat.id})
+       if not is_v:
+           await bot.send_chat_action(message.chat.id, "typing")
+           K = []  
+           is_chat = chatai.find({"word": message.text})  
+           k = chatai.find_one({"word": message.text})      
+           if k:               
+               for x in is_chat:
+                   K.append(x['text'])          
+               hey = random.choice(K)
+               is_text = chatai.find_one({"text": hey})
+               Yo = is_text['check']
+               if Yo == "sticker":
+                   await message.reply_sticker(f"{hey}")
+               if not Yo == "sticker":
+                   await message.reply_text(f"{hey}")
+   
+   if message.reply_to_message:  
+       vdb = MongoClient(MONGO_URL)
+       v = vdb["vDb"]["v"] 
+       is_v = v.find_one({"chat_id": message.chat.id})    
+       getme = await bot.get_me()
+       bot_id = getme.id                             
+       if message.reply_to_message.from_user.id == bot_id: 
+           if not is_v:                   
+               await bot.send_chat_action(message.chat.id, "typing")
+               K = []  
+               is_chat = chatai.find({"word": message.text})
+               k = chatai.find_one({"word": message.text})      
+               if k:       
+                   for x in is_chat:
+                       K.append(x['text'])
+                   hey = random.choice(K)
+                   is_text = chatai.find_one({"text": hey})
+                   Yo = is_text['check']
+                   if Yo == "sticker":
+                       await message.reply_sticker(f"{hey}")
+                   if not Yo == "sticker":
+                       await message.reply_text(f"{hey}")
+       if not message.reply_to_message.from_user.id == bot_id:          
+           if message.sticker:
+               is_chat = chatai.find_one({"word": message.reply_to_message.text, "id": message.sticker.file_unique_id})
+               if not is_chat:
+                   chatai.insert_one({"word": message.reply_to_message.text, "text": message.sticker.file_id, "check": "sticker", "id": message.sticker.file_unique_id})
+           if message.text:                 
+               is_chat = chatai.find_one({"word": message.reply_to_message.text, "text": message.text})                 
+               if not is_chat:
+                   chatai.insert_one({"word": message.reply_to_message.text, "text": message.text, "check": "none"})    
+               
+
+@bot.on_message(
+ (
+        filters.sticker
+        | filters.text
+    )
+    & ~filters.private
+    & ~filters.bot,
+)
+async def vstickerai(client: Client, message: Message):
+
+   chatdb = MongoClient(MONGO_URL)
+   chatai = chatdb["Word"]["WordDb"]   
+
+   if not message.reply_to_message:
+       vdb = MongoClient(MONGO_URL)
+       v = vdb["vDb"]["v"] 
+       is_v = v.find_one({"chat_id": message.chat.id})
+       if not is_v:
+           await bot.send_chat_action(message.chat.id, "typing")
+           K = []  
+           is_chat = chatai.find({"word": message.sticker.file_unique_id})      
+           k = chatai.find_one({"word": message.text})      
+           if k:           
+               for x in is_chat:
+                   K.append(x['text'])
+               hey = random.choice(K)
+               is_text = chatai.find_one({"text": hey})
+               Yo = is_text['check']
+               if Yo == "text":
+                   await message.reply_text(f"{hey}")
+               if not Yo == "text":
+                   await message.reply_sticker(f"{hey}")
+   
+   if message.reply_to_message:
+       vdb = MongoClient(MONGO_URL)
+       v = vdb["vDb"]["v"] 
+       is_v = v.find_one({"chat_id": message.chat.id})
+       getme = await bot.get_me()
+       bot_id = getme.id
+       if message.reply_to_message.from_user.id == bot_id: 
+           if not is_v:                    
+               await bot.send_chat_action(message.chat.id, "typing")
+               K = []  
+               is_chat = chatai.find({"word": message.text})
+               k = chatai.find_one({"word": message.text})      
+               if k:           
+                   for x in is_chat:
+                       K.append(x['text'])
+                   hey = random.choice(K)
+                   is_text = chatai.find_one({"text": hey})
+                   Yo = is_text['check']
+                   if Yo == "text":
+                       await message.reply_text(f"{hey}")
+                   if not Yo == "text":
+                       await message.reply_sticker(f"{hey}")
+       if not message.reply_to_message.from_user.id == bot_id:          
+           if message.text:
+               is_chat = chatai.find_one({"word": message.reply_to_message.sticker.file_unique_id, "text": message.text})
+               if not is_chat:
+                   toggle.insert_one({"word": message.reply_to_message.sticker.file_unique_id, "text": message.text, "check": "text"})
+           if message.sticker:                 
+               is_chat = chatai.find_one({"word": message.reply_to_message.sticker.file_unique_id, "text": message.sticker.file_id})                 
+               if not is_chat:
+                   chatai.insert_one({"word": message.reply_to_message.sticker.file_unique_id, "text": message.sticker.file_id, "check": "none"})    
+               
+
+
+@bot.on_message(
+    (
+        filters.text
+        | filters.sticker
+    )
+    & filters.private
+    & ~filters.bot,
+)
+async def vprivate(client: Client, message: Message):
+
+   chatdb = MongoClient(MONGO_URL)
+   chatai = chatdb["Word"]["WordDb"]
+   if not message.reply_to_message: 
+       await bot.send_chat_action(message.chat.id, "typing")
+       K = []  
+       is_chat = chatai.find({"word": message.text})                 
+       for x in is_chat:
+           K.append(x['text'])
+       hey = random.choice(K)
+       is_text = chatai.find_one({"text": hey})
+       Yo = is_text['check']
+       if Yo == "sticker":
+           await message.reply_sticker(f"{hey}")
+       if not Yo == "sticker":
+           await message.reply_text(f"{hey}")
+   if message.reply_to_message:            
+       getme = await bot.get_me()
+       bot_id = getme.id       
+       if message.reply_to_message.from_user.id == bot_id:                    
+           await bot.send_chat_action(message.chat.id, "typing")
+           K = []  
+           is_chat = chatai.find({"word": message.text})                 
+           for x in is_chat:
+               K.append(x['text'])
+           hey = random.choice(K)
+           is_text = chatai.find_one({"text": hey})
+           Yo = is_text['check']
+           if Yo == "sticker":
+               await message.reply_sticker(f"{hey}")
+           if not Yo == "sticker":
+               await message.reply_text(f"{hey}")
+       
+
+@bot.on_message(
+ (
+        filters.sticker
+        | filters.text
+    )
+    & filters.private
+    & ~filters.bot,
+)
+async def vprivatesticker(client: Client, message: Message):
+
+   chatdb = MongoClient(MONGO_URL)
+   chatai = chatdb["Word"]["WordDb"] 
+   if not message.reply_to_message:
+       await bot.send_chat_action(message.chat.id, "typing")
+       K = []  
+       is_chat = chatai.find({"word": message.sticker.file_unique_id})                 
+       for x in is_chat:
+           K.append(x['text'])
+       hey = random.choice(K)
+       is_text = chatai.find_one({"text": hey})
+       Yo = is_text['check']
+       if Yo == "text":
+           await message.reply_text(f"{hey}")
+       if not Yo == "text":
+           await message.reply_sticker(f"{hey}")
+   if message.reply_to_message:            
+       getme = await bot.get_me()
+       bot_id = getme.id       
+       if message.reply_to_message.from_user.id == bot_id:                    
+           await bot.send_chat_action(message.chat.id, "typing")
+           K = []  
+           is_chat = chatai.find({"word": message.sticker.file_unique_id})                 
+           for x in is_chat:
+               K.append(x['text'])
+           hey = random.choice(K)
+           is_text = chatai.find_one({"text": hey})
+           Yo = is_text['check']
+           if Yo == "text":
+               await message.reply_text(f"{hey}")
+           if not Yo == "text":
+               await message.reply_sticker(f"{hey}")
+       
+bot.run()
